@@ -1,0 +1,57 @@
+import numpy as np
+
+# Предположим, что данные в формате DataFrame с колонками "pickup_latitude", "pickup_longitude",
+# "dropoff_latitude", "dropoff_longitude"
+data = pd.DataFrame({
+    'pickup_latitude': [55.751244, 55.7558, 55.7649],
+    'pickup_longitude': [37.618423, 37.6176, 37.6113],
+    'dropoff_latitude': [55.7607, 55.7455, 55.7382],
+    'dropoff_longitude': [37.6246, 37.6034, 37.5902]
+})
+
+# Определим размеры ячейки (приблизительно 1 км)
+MOSCOW_LATITUDE = 55.75
+LATITUDE_GRID_SIZE = 1 / 111  # ~1 км по широте
+LONGITUDE_GRID_SIZE = 1 / (111 * np.cos(np.radians(MOSCOW_LATITUDE)))  # ~1 км по долготе в Москве
+
+# Функция для получения индекса ячейки по координатам
+def get_grid_index(lat, lon, lat_grid_size, lon_grid_size):
+    lat_idx = int(lat / lat_grid_size)
+    lon_idx = int(lon / lon_grid_size)
+    return lat_idx, lon_idx
+
+# Добавляем индексы ячеек для точек посадки и высадки
+data['pickup_grid'] = data.apply(lambda row: get_grid_index(
+    row['pickup_latitude'], row['pickup_longitude'], LATITUDE_GRID_SIZE, LONGITUDE_GRID_SIZE), axis=1)
+
+data['dropoff_grid'] = data.apply(lambda row: get_grid_index(
+    row['dropoff_latitude'], row['dropoff_longitude'], LATITUDE_GRID_SIZE, LONGITUDE_GRID_SIZE), axis=1)
+
+# Присваиваем уникальный идентификатор для каждой зоны
+data['pickup_grid_id'] = data['pickup_grid'].apply(lambda x: f"{x[0]}_{x[1]}")
+data['dropoff_grid_id'] = data['dropoff_grid'].apply(lambda x: f"{x[0]}_{x[1]}")
+
+print(data[['pickup_grid_id', 'dropoff_grid_id']])
+
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Initialize TfidfVectorizer
+tfidf = TfidfVectorizer(max_features=1000)  # e.g., limit to 1000 features
+X_tfidf = tfidf.fit_transform(train['text_column']).toarray()
+import numpy as np
+
+# Assuming 'other_features' is a DataFrame of other features
+X_combined = np.hstack((X_tfidf, other_features.values))
+from catboost import CatBoostClassifier
+
+# Initialize CatBoost
+model = CatBoostClassifier(iterations=500, learning_rate=0.1, depth=6)
+
+# Fit model
+model.fit(X_combined, y_train)
+
+from sklearn.metrics import accuracy_score
+
+y_pred = model.predict(X_combined_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
