@@ -62,3 +62,16 @@ fig = plt.figure(figsize=(15, 10))
 plt.barh(range(len(sorted_idx)), feature_importance[sorted_idx], align='center')
 plt.yticks(range(len(sorted_idx)), np.array(X_eval.columns)[sorted_idx])
 plt.title('Feature Importance')
+
+import easyocr
+from PIL import Image
+
+# Инициализация считывателя с поддержкой русского языка
+reader = easyocr.Reader(['ru', 'en'])  # Можно добавить несколько языков, например 'ru' и 'en'
+
+# Укажите путь к изображению
+image_path = "/Users/andrejboriskin/Downloads/Photos with Text.png"  # Замените на путь к вашему изображению
+result = reader.readtext(image_path, detail=0)
+
+# Вывод распознанного текста
+print("Распознанный текст:", "\n".join(result))
