@@ -69,6 +69,46 @@ from PIL import Image
 # Инициализация считывателя с поддержкой русского языка
 reader = easyocr.Reader(['ru', 'en'])  # Можно добавить несколько языков, например 'ru' и 'en'
 
+
+import optuna
+import catboost
+from catboost import CatBoostClassifier
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.datasets import load_breast_cancer
+
+# Загружаем данные
+data = load_breast_cancer()
+X_train, X_test, y_train, y_test = train_test_split(data.data, data.target, test_size=0.2, random_state=42)
+
+# Функция для оптимизации
+def objective(trial):
+    params = {
+        "iterations": trial.suggest_int("iterations", 100, 1000, step=50),
+        "depth": trial.suggest_int("depth", 4, 10),
+        "learning_rate": trial.suggest_loguniform("learning_rate", 1e-3, 0.3),
+        "l2_leaf_reg": trial.suggest_loguniform("l2_leaf_reg", 1e-3, 10),
+        "border_count": trial.suggest_int("border_count", 10, 255),
+        "bagging_temperature": trial.suggest_uniform("bagging_temperature", 0, 1),
+        "random_strength": trial.suggest_uniform("random_strength", 0, 10),
+        "boosting_type": "Plain",
+        "eval_metric": "AUC",
+        "loss_function": "Logloss",
+        "verbose": 0
+    }
+
+    model = CatBoostClassifier(**params)
+    
+    score = cross_val_score(model, X_train, y_train, cv=5, scoring="roc_auc").mean()
+    return score
+
+# Запуск Optuna
+study = optuna.create_study(direction="maximize")  # Максимизируем AUC
+study.optimize(objective, n_trials=50)
+
+# Вывод результатов
+print("Лучшие параметры:", study.best_params)
+print("Лучший AUC:", study.best_value)
+
 # Укажите путь к изображению
 image_path = "/Users/andrejboriskin/Downloads/Photos with Text.png"  # Замените на путь к вашему изображению
 result = reader.readtext(image_path, detail=0)
